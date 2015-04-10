@@ -39,7 +39,5 @@ public:
   void reset(void);
 
 private:
-  boolean readData(void);
-  float humidity, temp;
 };
 
