@@ -15,23 +15,24 @@
  ****************************************************/
 
 #include "Adafruit_HTU21DF.h"
-#if defined(__AVR__)
-#include <util/delay.h>
-#endif
 
 Adafruit_HTU21DF::Adafruit_HTU21DF() {
 }
 
 
+boolean Adafruit_HTU21DF::check(void) {
+  readUserReg();
+  return !error;
+}
+
 boolean Adafruit_HTU21DF::begin(void) {
   reset();
 
-  Wire.beginTransmission(HTU21DF_I2CADDR);
-  Wire.write(HTU21DF_READREG);
-  Wire.endTransmission();
-  Wire.requestFrom(HTU21DF_I2CADDR, 1);
+  uint8_t reg = readUserReg();
+  if (error)
+    return false;
 
-  return (Wire.read() == 0x2); // after reset should be 0x2
+  return (reg == 0x2); // after reset user register should be 0x2
 }
 
 void Adafruit_HTU21DF::reset(void) {
@@ -39,6 +40,23 @@ void Adafruit_HTU21DF::reset(void) {
   Wire.write(HTU21DF_RESET);
   Wire.endTransmission();
   delay(15);
+}
+
+
+uint8_t Adafruit_HTU21DF::readUserReg(void) {
+  Wire.beginTransmission(HTU21DF_I2CADDR);
+  Wire.write(HTU21DF_READREG);
+  Wire.endTransmission();
+  Wire.requestFrom(HTU21DF_I2CADDR, 1);
+
+  int reg = Wire.read();
+  error = false;
+  if (reg == -1) {
+    error = true;
+    return 0;
+  }
+
+  return reg;
 }
 
 bool Adafruit_HTU21DF::readRaw(uint8_t addr, uint16_t& raw) {
@@ -51,11 +69,20 @@ bool Adafruit_HTU21DF::readRaw(uint8_t addr, uint16_t& raw) {
   Wire.requestFrom(HTU21DF_I2CADDR, 3);
   while (!Wire.available()) {}
 
-  raw = Wire.read();
-  raw <<= 8;
-  raw |= Wire.read();
+  int d;
+  d = Wire.read();
+  if (d == -1)
+    return false;
+  raw = (uint8_t)d << 8;
+  d = Wire.read();
+  if (d == -1)
+    return false;
+  raw |= (uint8_t)d;
 
-  uint8_t checksum = Wire.read();
+  d = Wire.read();
+  if (d == -1)
+    return false;
+  uint8_t checksum = d;
   uint8_t crc = calcCRC(raw, checksum);
   raw &= 0xfffc;		// remove the two LSB status bits
 

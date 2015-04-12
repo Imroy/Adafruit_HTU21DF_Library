@@ -33,8 +33,10 @@
 class Adafruit_HTU21DF {
 public:
   Adafruit_HTU21DF();
+  boolean check(void);
   boolean begin(void);
   void reset(void);
+
   bool readTemperature(void) { return readRaw(HTU21DF_READTEMP, raw_t); }
   bool readHumidity(void) { return readRaw(HTU21DF_READHUM, raw_h); }
   uint16_t rawTemperature(void) { return raw_t; }
@@ -45,7 +47,9 @@ public:
 
 private:
   uint16_t raw_t, raw_h;
+  bool error;
 
+  uint8_t readUserReg(void);
   bool readRaw(uint8_t addr, uint16_t& raw);
   uint8_t calcCRC(uint16_t data, uint8_t crc = 0);
 };
