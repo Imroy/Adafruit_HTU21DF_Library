@@ -59,13 +59,13 @@ uint8_t Adafruit_HTU21DF::readUserReg(void) {
   return reg;
 }
 
-bool Adafruit_HTU21DF::readRaw(uint8_t addr, uint16_t& raw) {
+void Adafruit_HTU21DF::measure(uint8_t addr) {
   Wire.beginTransmission(HTU21DF_I2CADDR);
   Wire.write(addr);
   Wire.endTransmission();
-  
-  delay(50); // add delay between request and actual read!
-  
+}
+
+bool Adafruit_HTU21DF::readRaw(uint16_t& raw) {
   Wire.requestFrom(HTU21DF_I2CADDR, 3);
   while (!Wire.available()) {}
 

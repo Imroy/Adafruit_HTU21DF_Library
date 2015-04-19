@@ -24,6 +24,8 @@
 #define HTU21DF_I2CADDR		0x40
 #define HTU21DF_READTEMP	0xE3
 #define HTU21DF_READHUM		0xE5
+#define HTU21DF_MEASTEMP_NOHOLD	0xF3
+#define HTU21DF_MEASHUM_NOHOLD	0xF5
 #define HTU21DF_WRITEREG	0xE6
 #define HTU21DF_READREG		0xE7
 #define HTU21DF_RESET		0xFE
@@ -37,10 +39,17 @@ public:
   boolean begin(void);
   void reset(void);
 
-  bool readTemperature(void) { return readRaw(HTU21DF_READTEMP, raw_t); }
-  bool readHumidity(void) { return readRaw(HTU21DF_READHUM, raw_h); }
+  // up to 50 ms
+  void measureTemperature(void) { return measure(HTU21DF_MEASTEMP_NOHOLD); }
+  // up to 16 ms
+  void measureHumidity(void) { return measure(HTU21DF_MEASHUM_NOHOLD); }
+
+  bool readTemperature(void) { return readRaw(raw_t); }
+  bool readHumidity(void) { return readRaw(raw_h); }
+
   uint16_t rawTemperature(void) { return raw_t; }
   uint16_t rawHumidity(void) { return raw_h; }
+
   float temperature(void);
   float humidity(void);
   float compensatedHumidity(void);
@@ -50,7 +59,8 @@ private:
   bool error;
 
   uint8_t readUserReg(void);
-  bool readRaw(uint8_t addr, uint16_t& raw);
+  void measure(uint8_t addr);
+  bool readRaw(uint16_t& raw);
   uint8_t calcCRC(uint16_t data, uint8_t crc = 0);
 };
 
