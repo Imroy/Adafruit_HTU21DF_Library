@@ -89,7 +89,7 @@ bool Adafruit_HTU21DF::readRaw(uint16_t& raw) {
   return (crc == 0);
 }
 
-float Adafruit_HTU21DF::temperature(void) {
+float Adafruit_HTU21DF::temperature(void) const {
   float temp = raw_t;
   temp *= 175.72;
   temp /= 65536;
@@ -98,7 +98,7 @@ float Adafruit_HTU21DF::temperature(void) {
   return temp;
 }
   
-float Adafruit_HTU21DF::humidity(void) {
+float Adafruit_HTU21DF::humidity(void) const {
   float hum = raw_h;
   hum *= 125;
   hum /= 65536;
@@ -107,7 +107,7 @@ float Adafruit_HTU21DF::humidity(void) {
   return hum;
 }
 
-float Adafruit_HTU21DF::compensatedHumidity(void) {
+float Adafruit_HTU21DF::compensatedHumidity(void) const {
   float t = temperature();
   float h = humidity();
   return h + ((25 - t) * -0.15);

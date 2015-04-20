@@ -53,12 +53,12 @@ public:
   bool readRawTemperature(void) { return readRaw(raw_t); }
   bool readRawHumidity(void) { return readRaw(raw_h); }
 
-  uint16_t rawTemperature(void) { return raw_t; }
-  uint16_t rawHumidity(void) { return raw_h; }
+  uint16_t rawTemperature(void) const { return raw_t; }
+  uint16_t rawHumidity(void) const { return raw_h; }
 
-  float temperature(void);
-  float humidity(void);
-  float compensatedHumidity(void);
+  float temperature(void) const;
+  float humidity(void) const;
+  float compensatedHumidity(void) const;
 
 private:
   uint16_t raw_t, raw_h;
