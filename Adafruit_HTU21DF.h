@@ -50,8 +50,8 @@ public:
     return 16;
   }
 
-  bool readTemperature(void) { return readRaw(raw_t); }
-  bool readHumidity(void) { return readRaw(raw_h); }
+  bool readRawTemperature(void) { return readRaw(raw_t); }
+  bool readRawHumidity(void) { return readRaw(raw_h); }
 
   uint16_t rawTemperature(void) { return raw_t; }
   uint16_t rawHumidity(void) { return raw_h; }
