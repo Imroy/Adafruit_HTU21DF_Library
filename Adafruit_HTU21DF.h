@@ -40,9 +40,15 @@ public:
   void reset(void);
 
   // up to 50 ms
-  void measureTemperature(void) { return measure(HTU21DF_MEASTEMP_NOHOLD); }
+  unsigned long measureTemperature(void) {
+    measure(HTU21DF_MEASTEMP_NOHOLD);
+    return 50;
+  }
   // up to 16 ms
-  void measureHumidity(void) { return measure(HTU21DF_MEASHUM_NOHOLD); }
+  unsigned long measureHumidity(void) {
+    measure(HTU21DF_MEASHUM_NOHOLD);
+    return 16;
+  }
 
   bool readTemperature(void) { return readRaw(raw_t); }
   bool readHumidity(void) { return readRaw(raw_h); }
