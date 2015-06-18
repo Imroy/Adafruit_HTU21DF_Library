@@ -37,7 +37,7 @@ boolean Adafruit_HTU21DF::begin(void) {
 
 void Adafruit_HTU21DF::reset(void) {
   Wire.beginTransmission(HTU21DF_I2CADDR);
-  Wire.write(HTU21DF_RESET);
+  Wire.write(RESET);
   Wire.endTransmission();
   delay(15);
 }
@@ -45,7 +45,7 @@ void Adafruit_HTU21DF::reset(void) {
 
 uint8_t Adafruit_HTU21DF::readUserReg(void) {
   Wire.beginTransmission(HTU21DF_I2CADDR);
-  Wire.write(HTU21DF_READREG);
+  Wire.write(READREG);
   Wire.endTransmission();
   Wire.requestFrom(HTU21DF_I2CADDR, 1);
 
@@ -59,9 +59,9 @@ uint8_t Adafruit_HTU21DF::readUserReg(void) {
   return reg;
 }
 
-void Adafruit_HTU21DF::measure(uint8_t addr) {
+void Adafruit_HTU21DF::measure(HTU21DF_command cmd) {
   Wire.beginTransmission(HTU21DF_I2CADDR);
-  Wire.write(addr);
+  Wire.write(cmd);
   Wire.endTransmission();
 }
 

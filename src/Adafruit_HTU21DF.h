@@ -22,14 +22,16 @@
 #include <Wire.h>
 
 #define HTU21DF_I2CADDR		0x40
-#define HTU21DF_READTEMP	0xE3
-#define HTU21DF_READHUM		0xE5
-#define HTU21DF_MEASTEMP_NOHOLD	0xF3
-#define HTU21DF_MEASHUM_NOHOLD	0xF5
-#define HTU21DF_WRITEREG	0xE6
-#define HTU21DF_READREG		0xE7
-#define HTU21DF_RESET		0xFE
 
+enum HTU21DF_command {
+  MEASTEMP		= 0xE3,
+  MEASHUM		= 0xE5,
+  MEASTEMP_NOHOLD	= 0xF3,
+  MEASHUM_NOHOLD	= 0xF5,
+  WRITEREG		= 0xE6,
+  READREG		= 0xE7,
+  RESET			= 0xFE,
+};
 
 
 class Adafruit_HTU21DF {
@@ -41,12 +43,12 @@ public:
 
   // up to 50 ms
   unsigned long measureTemperature(void) {
-    measure(HTU21DF_MEASTEMP_NOHOLD);
+    measure(MEASTEMP_NOHOLD);
     return 50;
   }
   // up to 16 ms
   unsigned long measureHumidity(void) {
-    measure(HTU21DF_MEASHUM_NOHOLD);
+    measure(MEASHUM_NOHOLD);
     return 16;
   }
 
@@ -65,7 +67,7 @@ private:
   bool error;
 
   uint8_t readUserReg(void);
-  void measure(uint8_t addr);
+  void measure(HTU21DF_command cmd);
   bool readRaw(uint16_t& raw);
   uint8_t calcCRC(uint16_t data, uint8_t crc = 0);
 };
