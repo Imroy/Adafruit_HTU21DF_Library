@@ -97,7 +97,7 @@ float Adafruit_HTU21DF::temperature(void) const {
 
   return temp;
 }
-  
+
 float Adafruit_HTU21DF::humidity(void) const {
   float hum = raw_h;
   hum *= 125;
