@@ -16,28 +16,24 @@
 
 #include "Adafruit_HTU21DF.h"
 
-Adafruit_HTU21DF::Adafruit_HTU21DF() {
-}
-
-
-boolean Adafruit_HTU21DF::check(void) {
+bool Adafruit_HTU21DF::check(void) {
   readUserReg();
-  return !error;
+  return !_error;
 }
 
-boolean Adafruit_HTU21DF::begin(void) {
+bool Adafruit_HTU21DF::begin(void) {
   reset();
 
   uint8_t reg = readUserReg();
-  if (error)
+  if (_error)
     return false;
 
-  return (reg == 0x2); // after reset user register should be 0x2
+  return (reg == static_cast<uint8_t>(Register_mask::Disable_OTP));
 }
 
 void Adafruit_HTU21DF::reset(void) {
   Wire.beginTransmission(HTU21DF_I2CADDR);
-  Wire.write(RESET);
+  Wire.write(static_cast<uint8_t>(Command::Reset));
   Wire.endTransmission();
   delay(15);
 }
@@ -45,94 +41,107 @@ void Adafruit_HTU21DF::reset(void) {
 
 uint8_t Adafruit_HTU21DF::readUserReg(void) {
   Wire.beginTransmission(HTU21DF_I2CADDR);
-  Wire.write(READREG);
+  Wire.write(static_cast<uint8_t>(Command::ReadRegister));
   Wire.endTransmission();
-  Wire.requestFrom(HTU21DF_I2CADDR, 1);
+
+  _error = false;
+  if (Wire.requestFrom(HTU21DF_I2CADDR, 1) < 1) {
+    _error = true;
+    return 0;
+  }
 
   int reg = Wire.read();
-  error = false;
   if (reg == -1) {
-    error = true;
+    _error = true;
     return 0;
   }
 
   return reg;
 }
 
-void Adafruit_HTU21DF::measure(HTU21DF_command cmd) {
+void Adafruit_HTU21DF::writeUserReg(uint8_t value) {
   Wire.beginTransmission(HTU21DF_I2CADDR);
-  Wire.write(cmd);
+  Wire.write(static_cast<uint8_t>(Command::WriteRegister));
+  Wire.write(value);
   Wire.endTransmission();
 }
 
-bool Adafruit_HTU21DF::readRaw(uint16_t& raw) {
-  Wire.requestFrom(HTU21DF_I2CADDR, 3);
-  while (!Wire.available()) {}
-
-  int d;
-  d = Wire.read();
-  if (d == -1)
-    return false;
-  raw = (uint8_t)d << 8;
-  d = Wire.read();
-  if (d == -1)
-    return false;
-  raw |= (uint8_t)d;
-
-  d = Wire.read();
-  if (d == -1)
-    return false;
-  uint8_t checksum = d;
-  uint8_t crc = calcCRC(raw, checksum);
-  raw &= 0xfffc;		// remove the two LSB status bits
-
-  return (crc == 0);
+void Adafruit_HTU21DF::measure(Adafruit_HTU21DF::Command cmd) {
+  Wire.beginTransmission(HTU21DF_I2CADDR);
+  Wire.write(static_cast<uint8_t>(cmd));
+  Wire.endTransmission();
 }
 
-float Adafruit_HTU21DF::temperature(void) const {
-  float temp = raw_t;
-  temp *= 175.72;
-  temp /= 65536;
-  temp -= 46.85;
-
-  return temp;
-}
-
-float Adafruit_HTU21DF::humidity(void) const {
-  float hum = raw_h;
-  hum *= 125;
-  hum /= 65536;
-  hum -= 6;
-
-  return hum;
-}
-
-float Adafruit_HTU21DF::compensatedHumidity(void) const {
-  float t = temperature();
-  float h = humidity();
-  return h + ((25 - t) * -0.15);
-}
-
-/* Copied from SparkFun's slightly more complete library:
-   https://github.com/sparkfun/HTU21D_Breakout/blob/master/library/HTU21D_Humidity/HTU21D.cpp
-*/
-uint8_t Adafruit_HTU21DF::calcCRC(uint16_t data, uint8_t crc) {
-  uint32_t remainder = (uint32_t)data << 8;	// Pad with 8 bits because we have to add in the check value
-  remainder |= crc;				// Add on the check value
-
-  uint32_t divsor = (uint32_t)0x988000;		// This is the polynomial shifted to farthest left of three bytes
-
-  for (int i = 0 ; i < 16 ; i++) {		// Operate on only 16 positions of max 24. The remaining 8 are our remainder and should be zero when we're done.
-    if (remainder & (uint32_t)1<<(23 - i))	// Check if there is a one in the left position
-      remainder ^= divsor;
-
-    divsor >>= 1;				//Rotate the divsor max 16 times so that we have 8 bits left of a remainder
+uint16_t Adafruit_HTU21DF::readRaw(void) {
+  if (Wire.requestFrom(HTU21DF_I2CADDR, 3) < 3) {
+    _error = true;
+    return 0;
   }
 
-  return (uint8_t)remainder && 0xff;
+  while (!Wire.available()) {}
+
+  _error = false;
+
+  int high = Wire.read();
+  if (high == -1) {
+    _error = true;
+    return 0;
+  }
+
+  int low = Wire.read();
+  if (low == -1) {
+    _error = true;
+    return 0;
+  }
+
+  int checksum = Wire.read();
+  if (checksum == -1) {
+    _error = true;
+    return 0;
+  }
+
+  uint16_t raw = static_cast<uint16_t>(high & 0xff) | (low & 0xff);
+  uint8_t crc = calcCRC(raw, checksum);
+  raw &= 0xfffc;		// remove the two LSB status bits
+  if (crc != 0) {
+    _error = true;
+    return 0;
+  }
+
+  return raw;
 }
 
+bool Adafruit_HTU21DF::readRawTemperature(void) {
+  uint16_t d = readRaw();
+  if (_error) return false;
 
+  _raw_t = d;
+  return true;
+}
 
+bool Adafruit_HTU21DF::readRawHumidity(void) {
+  uint16_t d = readRaw();
+  if (_error) return false;
 
-/*********************************************************************/
+  _raw_h = d;
+  return true;
+}
+
+/* Originally copied from SparkFun's slightly more complete library:
+   https://github.com/sparkfun/HTU21D_Breakout/blob/master/Libraries/Arduino/src/SparkFunHTU21D.cpp
+*/
+uint8_t Adafruit_HTU21DF::calcCRC(uint16_t data, uint8_t crc) {
+  uint32_t remainder = static_cast<uint32_t>(data) << 8;	// Pad with 8 bits because we have to add in the check value
+  remainder |= crc;				// Add on the check value
+
+  uint32_t divisor = 0x988000L;			// This is the polynomial shifted to farthest left of three bytes
+
+  for (int i = 0 ; i < 16 ; i++) {		// Operate on only 16 positions of max 24. The remaining 8 are our remainder and should be zero when we're done.
+    if (remainder & 1L << (23 - i))		// Check if there is a one in the left position
+      remainder ^= divisor;
+
+    divisor >>= 1;				// Rotate the divisor max 16 times so that we have 8 bits left of a remainder
+  }
+
+  return remainder & 0xff;
+}
